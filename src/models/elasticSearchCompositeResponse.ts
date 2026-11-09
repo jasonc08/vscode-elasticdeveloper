@@ -1,6 +1,6 @@
 'use strict'
 
-import { Environment } from "./environment";
+
 import { ElasticsearchResponse } from "./elasticsearchResponse";
 
 export class ElasticSearchCompositeResponse implements ElasticsearchResponse {
@@ -27,6 +27,6 @@ export class ElasticSearchCompositeResponse implements ElasticsearchResponse {
 
     body?:string
 
-    environment?:Environment
+    environment?:string
 
 }

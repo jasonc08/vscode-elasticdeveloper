@@ -1,6 +1,6 @@
 'use strict'
 
-import * as request from 'request'
+import request = require('request')
 import { Graph, Node, Edge } from "../../../models/graph";
 import { isObject } from '../../../helpers/object';
 import { LogManager } from '../../../managers/logManager';

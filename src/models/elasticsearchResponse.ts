@@ -1,6 +1,6 @@
 'use strict'
 
-import { Environment } from "./environment";
+
 
 export interface ElasticsearchResponse {
 
@@ -18,6 +18,6 @@ export interface ElasticsearchResponse {
 
     body?:any
 
-    environment?:Environment
+    environment?:string
 
 }

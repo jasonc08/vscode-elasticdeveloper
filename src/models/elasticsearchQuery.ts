@@ -321,8 +321,14 @@ export async function executeQuery(query:ElasticsearchQuery, environment:Environ
     try {
         response = await ElasticService.execute(query, environment);
     }catch(ex) {
-        response = ex;
-        response.environment = environment;
+        // An Error serialises to `{}`, so build a proper response instead of
+        // handing the raw exception to the output formatter.
+        response = {
+            statusCode: 0,
+            message: ex && ex.message ? ex.message : String(ex),
+            completed: false,
+            environment: environment ? environment.toString() : null
+        } as ElasticsearchResponse;
     }
 
     return response;

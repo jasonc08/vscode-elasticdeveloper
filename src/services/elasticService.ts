@@ -1,6 +1,6 @@
 'use strict'
 
-import * as request from 'request'
+import request = require('request')
 
 import { ElasticsearchQuery } from '../models/elasticsearchQuery';
 import { ElasticsearchResponse } from '../models/elasticsearchResponse';
@@ -47,7 +47,9 @@ export class ElasticService {
             response.name = q.name;
         }
 
-        response.environment = environment;
+        // Store a short label, not the whole Environment instance: its private
+        // fields would otherwise end up in the serialised response.
+        response.environment = environment ? environment.toString() : null;
 
         return response;
     }
