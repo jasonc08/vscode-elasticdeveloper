@@ -326,9 +326,21 @@ export class IntellisenseGraphManager {
                 continue;
             }
 
-            // Only object-like nodes can be extended; scalars and arrays keep the
-            // definition that is already there.
-            if(value && typeof value === 'object' && !isArray(value) && !value.__as_type) {
+            // Extend object-like nodes, and also arrays that the existing node has no
+            // entries for: an empty `"sort": []` in the shipped spec otherwise stays
+            // without any element template to complete against.
+            if(isArray(value)) {
+
+                let existingChildren = graph.getEdgesWithSourceId(existingNode.id);
+
+                if(existingChildren.length === 0) {
+                    additions[field] = value;
+                }
+
+                continue;
+            }
+
+            if(value && typeof value === 'object' && !value.__as_type) {
                 this.mergeOverlaySection(graph, existingNode, value);
             }
         }
@@ -805,14 +817,16 @@ export class IntellisenseGraphManager {
 
     private addArrayNodeToEndpointDslGraph(array:any[], path:string, nodeId:string, nodeLabel:string, context:any, stack:any[] , graph:Graph) {
 
-        if(array.length > 0) {
+        // An empty array still names a valid field (e.g. `"sort": []`), so the
+        // node is created even when there are no entries to walk into.
+        if(!nodeId) {
+            nodeId = path;
+        } else if(!graph.getNodeWithId(nodeId)) {
+            graph.addNode(nodeId, nodeLabel, { types: ['array'], depth: context.depth});
+            graph.addEdge(path, nodeId, null, 'array');
+        }
 
-            if(!nodeId) {
-                nodeId = path;
-            } else {
-                graph.addNode(nodeId, nodeLabel, { types: ['array'], depth: context.depth});
-                graph.addEdge(path, nodeId, null, 'array');
-            }
+        if(array.length > 0) {
 
             for(let index = 0; index < array.length;index++) {
                 let arrayEntry =  array[index];

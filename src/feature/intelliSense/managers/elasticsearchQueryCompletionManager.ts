@@ -511,7 +511,11 @@ export class ElasticsearchQueryCompletionManager {
                                 range = new vscode.Range(range.start.line, range.start.character, range.end.line, range.end.character + 1);
                             }
 
-                            if((token.hasText && !token.propertyValueToken) && target.label !== token.text) {
+                            // Only drop a candidate when the typed text cannot be a
+                            // prefix of it. VS Code does the fuzzy filtering itself, so
+                            // demanding an exact match here hid every other field.
+                            if((token.hasText && !token.propertyValueToken) &&
+                                !target.label.toLowerCase().startsWith(token.text.toLowerCase())) {
                                 continue;
                             } else if(token.hasText && token.propertyValueToken && token.propertyValueToken.type === EntityTokenType.PropertyValue) {
                                 pattern = '{value}';

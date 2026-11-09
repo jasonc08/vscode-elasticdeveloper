@@ -57,6 +57,9 @@
                 }
             },
             "aggregations/{name}": {
+                "aggs": {
+                    "__children_of": "aggregations_template"
+                },
                 "rare_terms": {
                     "field": "{field}",
                     "size": 10,

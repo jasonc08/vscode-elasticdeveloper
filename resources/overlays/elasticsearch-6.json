@@ -2,6 +2,9 @@
     "graphs": {
         "*": {
             "aggregations/{name}": {
+                "aggs": {
+                    "__children_of": "aggregations_template"
+                },
                 "auto_date_histogram": {
                     "field": "{field}",
                     "buckets": 10,
@@ -10,10 +13,30 @@
                     "min_doc_count": 1
                 },
                 "bucket_sort": {
-                    "sort": [],
+                    "sort": [
+                        {
+                            "{field}": {
+                                "__as_type": ["asc", "desc"]
+                            }
+                        }
+                    ],
                     "from": 0,
                     "size": 0,
                     "gap_policy": "skip"
+                },
+                "top_hits": {
+                    "sort": [
+                        {
+                            "{field}": {
+                                "__as_type": ["asc", "desc"]
+                            }
+                        },
+                        {
+                            "_score": {
+                                "__as_type": ["asc", "desc"]
+                            }
+                        }
+                    ]
                 },
                 "weighted_avg": {
                     "value": {
