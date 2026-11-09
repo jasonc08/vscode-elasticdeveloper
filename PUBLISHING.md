@@ -101,16 +101,16 @@ release. Use semver:
 
 | Change | Example |
 |---|---|
-| Bug fix | `1.2.14` → `1.2.15` |
-| New feature, backward compatible | `1.2.14` → `1.3.0` |
-| Breaking change | `1.2.14` → `2.0.0` |
+| Bug fix | `1.3.0` → `1.3.1` |
+| New feature, backward compatible | `1.3.0` → `1.4.0` |
+| Breaking change | `1.3.0` → `2.0.0` |
 
 Edit `version` in `package.json`, or let `vsce` do it:
 
 ```bash
-npx vsce publish patch   # 1.2.14 -> 1.2.15
-npx vsce publish minor   # 1.2.14 -> 1.3.0
-npx vsce publish major   # 1.2.14 -> 2.0.0
+npx vsce publish patch   # 1.3.0 -> 1.3.1
+npx vsce publish minor   # 1.3.0 -> 1.4.0
+npx vsce publish major   # 1.3.0 -> 2.0.0
 ```
 
 Also update [CHANGELOG.md](CHANGELOG.md) — it is shown on the Marketplace page.
@@ -154,7 +154,7 @@ Things to check:
 Install and test the archive:
 
 ```bash
-code --install-extension elasticdeveloper-1.2.14.vsix --force
+code --install-extension elasticdeveloper-<version>.vsix --force
 ```
 
 > **Do not double-click the `.vsix` file on Windows.** Windows associates `.vsix`
@@ -197,7 +197,7 @@ This compiles via `vscode:prepublish`, packages, and uploads.
 If you already validated a `.vsix` in step 5:
 
 ```bash
-npx vsce publish --packagePath elasticdeveloper-1.2.14.vsix
+npx vsce publish --packagePath elasticdeveloper-<version>.vsix
 ```
 
 ### 6.4 Publish with the token inline (CI)
@@ -236,7 +236,7 @@ code --install-extension crasnam.elasticdeveloper
 |---|---|---|
 | `ERROR Missing publisher name` | `publisher` missing in `package.json` | Add it, or create the publisher first |
 | `ERROR The Personal Access Token verification has failed` | PAT expired, wrong org, or missing *Marketplace → Manage* scope | Create a new PAT with the right scope |
-| `ERROR Version 1.2.14 already exists` | Re-publishing the same version | Bump `version` |
+| `ERROR Version <version> already exists` | Re-publishing the same version | Bump `version` |
 | `ERROR Extension entrypoint(s) missing` | `main` points at a file that was not built | Run `npm run compile`; confirm `out/extension.js` exists |
 | `ERROR Icon not found` | `icon` path wrong, or not a 128×128 PNG | Fix the path; regenerate with `node scripts/generate-icon.js` |
 | `WARNING This extension consists of N files` | Archive is large | Trim `.vscodeignore`, bundle with esbuild, or split resources |

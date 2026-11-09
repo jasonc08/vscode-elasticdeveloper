@@ -8,6 +8,26 @@ All notable changes to the "Elasticsearch Developer tool" extension will be docu
     - Color highlight for mustache syntax
     - Color highlight for query-string syntax
 
+## 1.3.0
+### Added
+- Support for OpenSearch 1, 2 and 3 in the endpoint and query DSL intelliSense
+- Version overlays in `resources/overlays`, applied cumulatively so a newer
+  release inherits what the previous one added
+- `aggs` is offered as an alias of `aggregations`
+- An extension icon
+
+### Changed
+- Elasticsearch support ends at 7.10; later releases are handled as OpenSearch
+- Updated the toolchain to VS Code 1.85+, TypeScript 5 and `@vscode/test-electron`
+
+### Fixed
+- Autocomplete returned nothing on current VS Code: the extension failed to load
+  (no `out/` output, deprecated `util.isObject`/`isArray`), and once loaded the
+  endpoint graphs were empty because rest-api-spec keys did not match the shipped
+  DSL file names and `__children_of` references across imported files were ignored
+- Activation crashed when no workspace folder was open
+- The intelliSense toggle is now read per document, so it no longer needs a restart
+
 ## 1.2.13
 ### Changed
 - Updated packages
