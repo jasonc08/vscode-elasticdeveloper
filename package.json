@@ -6,16 +6,16 @@
   "license": "MIT",
   "icon": "images/icon.png",
   "preview": false,
-  "publisher": "crasnam",
+  "publisher": "jasonc08",
   "engines": {
     "vscode": "^1.85.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Crasnam/vscode-elasticdeveloper.git"
+    "url": "https://github.com/jasonc08/vscode-elasticdeveloper.git"
   },
   "bugs": {
-    "url": "https://github.com/Crasnam/vscode-elasticdeveloper/issues"
+    "url": "https://github.com/jasonc08/vscode-elasticdeveloper/issues"
   },
   "categories": [
     "Programming Languages",

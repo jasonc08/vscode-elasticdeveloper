@@ -11,7 +11,7 @@ All commands are run from the repository root.
 
 | Item | Where it comes from |
 |---|---|
-| Extension id | `<publisher>.<name>` → `crasnam.elasticdeveloper` |
+| Extension id | `<publisher>.<name>` → `jasonc08.elasticdeveloper` |
 | Version | `version` in `package.json` |
 | Icon | `icon` in `package.json` → `images/icon.png` (128×128 PNG) |
 | Code | `out/**` (compiled from `src/**` by `npm run compile`) |
@@ -40,14 +40,14 @@ Files excluded from the package are listed in [.vscodeignore](.vscodeignore).
 1. Sign in at <https://marketplace.visualstudio.com/manage> with your Microsoft account.
 2. Click **Create publisher**.
 3. Fill in:
-   - **ID** — this is the `publisher` value in `package.json`. This project already
-     uses `crasnam`, so use that ID (or update `publisher` in `package.json` to
+   - **ID** — this is the `publisher` value in `package.json`. This project uses
+     `jasonc08`, so create that ID (or update `publisher` in `package.json` to
      match whatever ID you create).
    - **Name** — display name shown on the listing.
 4. Save.
 
 > The publisher ID is permanent and appears in every install command
-> (`code --install-extension crasnam.elasticdeveloper`).
+> (`code --install-extension jasonc08.elasticdeveloper`).
 
 ### 1.2 Create a Personal Access Token (one time)
 
@@ -179,7 +179,7 @@ Then open a `.esquery` file and try `Ctrl+Space` inside a `_search` body.
 ### 6.1 Interactive login (easiest)
 
 ```bash
-npx vsce login crasnam
+npx vsce login jasonc08
 ```
 
 Paste the PAT when prompted. `vsce` stores it for this publisher.
@@ -225,7 +225,7 @@ npx vsce publish -p <TOKEN>
 Install from the Marketplace as an end user would:
 
 ```bash
-code --install-extension crasnam.elasticdeveloper
+code --install-extension jasonc08.elasticdeveloper
 ```
 
 ---

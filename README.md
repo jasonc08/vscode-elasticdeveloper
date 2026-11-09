@@ -26,7 +26,7 @@ This is a vscode extension that I have built to make it easier to work with Elas
     - Save multiple response as both JSON and HTML at the same time
 
 ### Demo
-Checkout the demo project https://github.com/Crasnam/vscode-elasticdeveloper/tree/master/demo/eslorem for examples.
+Checkout the demo project https://github.com/jasonc08/vscode-elasticdeveloper/tree/master/demo/eslorem for examples.
 
 ## Description
 ### Environment
@@ -121,7 +121,7 @@ This action will run all queries in a selected esquery file.
 ![run query, code lens](images/query_runAll.gif)
 
 #### Run Bulk
-The extension has support for the Bulk API and will manage the conversion of multiple bodies to the NDJSON format, see the file [populate_bulk.esquery](https://github.com/Crasnam/vscode-elasticdeveloper/blob/master/demo/eslorem/version_5.6.2/queries/index/populate_bulk.esquery) in the demo project for an example.
+The extension has support for the Bulk API and will manage the conversion of multiple bodies to the NDJSON format, see the file [populate_bulk.esquery](https://github.com/jasonc08/vscode-elasticdeveloper/blob/master/demo/eslorem/version_5.6.2/queries/index/populate_bulk.esquery) in the demo project for an example.
 
 > Read more about the Bulk API https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
 

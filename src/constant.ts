@@ -1,7 +1,7 @@
 'use strict';
 
 export const Name = 'elasticdeveloper';
-export const Publisher = 'crasnam';
+export const Publisher = 'jasonc08';
 export const ExtensionId = Publisher + '.' + Name;
 export const WorkspaceStateEnvironmentPath = 'environment.path';
 export const CommandPrefix = Name;
