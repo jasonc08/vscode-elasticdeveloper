@@ -12,7 +12,8 @@ All notable changes to the "Elasticsearch Developer tool" extension will be docu
 ### Added
 - Support for OpenSearch 1, 2 and 3 in the endpoint and query DSL intelliSense
 - Version overlays in `resources/overlays`, applied cumulatively so a newer
-  release inherits what the previous one added
+  release inherits what the previous one added. Every overlay that ships for the
+  engine is applied, so an environment does not have to declare a version
 - `aggs` is offered as an alias of `aggregations`
 - An extension icon
 
@@ -27,6 +28,12 @@ All notable changes to the "Elasticsearch Developer tool" extension will be docu
   DSL file names and `__children_of` references across imported files were ignored
 - Activation crashed when no workspace folder was open
 - The intelliSense toggle is now read per document, so it no longer needs a restart
+- Queries failed with `request is not a function` after `esModuleInterop` was
+  enabled; `request` is now imported with `import = require()`
+- The output window showed the environment's internal fields instead of its
+  `host (name)` label
+- A failed query printed `{}` because the thrown error was serialised directly;
+  failures now report `statusCode`, `message` and `completed`
 
 ## 1.2.13
 ### Changed
