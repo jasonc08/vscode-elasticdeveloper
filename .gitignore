@@ -6,3 +6,4 @@ demo/eslorem/search.esquery
 /.npm-cache
 /_probe
 /esbuild-probe.exe
+*.vsix
