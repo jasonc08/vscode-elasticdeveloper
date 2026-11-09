@@ -60,7 +60,7 @@ export class FileSystemLoaderServiceSpecificationManagerDecorator extends Servic
 
         try {
 
-            const fileContent = fs.readFileSync(file, 'UTF-8');
+            const fileContent = fs.readFileSync(file, 'utf-8');
             sourceItem = JSON.parse(fileContent);
 
             if(sourceItem) {

@@ -138,8 +138,10 @@ export abstract class Controller {
 
         this.verbose('register completion item provider with selector %s', languageId);
 
+        // Do not restrict to `scheme: 'file'`: documents that live in `untitled:`,
+        // `vscode-remote:`, `vscode-vfs:` etc. must get completions as well.
         this._context.subscriptions.push(
-            vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: languageId}, provider, ...triggerCharacters)
+            vscode.languages.registerCompletionItemProvider({ language: languageId }, provider, ...triggerCharacters)
         );
     }
 
@@ -191,7 +193,7 @@ export abstract class Controller {
             let content = JSON.stringify(model,null, 4);
 
             if(to) {
-                fs.writeFileSync(to, content, 'UTF-8');
+                fs.writeFileSync(to, content, 'utf-8');
             } else {
                 to = await this.createTemporaryFileWithContent(content);
                 let textDocument:vscode.TextDocument = await vscode.workspace.openTextDocument(to);
@@ -239,7 +241,7 @@ export abstract class Controller {
 
                 var result = template(model);
 
-                fs.writeFileSync(to, result, 'UTF-8');
+                fs.writeFileSync(to, result, 'utf-8');
                 this.info(false, 'saved output %s', to)
             } else {
                 this.warning(true, 'failed to load input template %s', fileTemplate);
@@ -273,7 +275,7 @@ export abstract class Controller {
 
     protected loadTextFromFile(filePath:string) {
 
-        let text = fs.readFileSync(filePath, 'UTF-8');
+        let text = fs.readFileSync(filePath, 'utf-8');
         return text;
     }
 

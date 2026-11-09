@@ -7,7 +7,7 @@
   "preview": false,
   "publisher": "crasnam",
   "engines": {
-    "vscode": "^1.30.0"
+    "vscode": "^1.85.0"
   },
   "repository": {
     "type": "git",
@@ -36,12 +36,12 @@
       "properties": {
         "elasticdeveloper.intelliSense.openEndpointDocumentation.enabled": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Enable Code lens 'open endpoint documentation'"
         },
         "elasticdeveloper.intelliSense.enabled": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Enable intelliSense support"
         }
       }
@@ -270,14 +270,16 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "postinstall": "node ./node_modules/vscode/bin/install",
-    "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    "test": "npm run compile && node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/mocha": "^5.2.7",
-    "@types/node": "^12.12.7",
-    "typescript": "^3.7.2",
-    "vscode": "^1.1.36"
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.17.6",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.4.1",
+    "glob": "^10.4.5",
+    "mocha": "^10.8.2",
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "handlebars": "^4.5.3",

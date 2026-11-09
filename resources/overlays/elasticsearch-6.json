@@ -1,0 +1,73 @@
+{
+    "graphs": {
+        "*": {
+            "aggregations/{name}": {
+                "auto_date_histogram": {
+                    "field": "{field}",
+                    "buckets": 10,
+                    "format": "{format}",
+                    "time_zone": "{time_zone}",
+                    "min_doc_count": 1
+                },
+                "bucket_sort": {
+                    "sort": [],
+                    "from": 0,
+                    "size": 0,
+                    "gap_policy": "skip"
+                },
+                "weighted_avg": {
+                    "value": {
+                        "field": "{field}",
+                        "missing": 0
+                    },
+                    "weight": {
+                        "field": "{field}",
+                        "missing": 0
+                    },
+                    "format": "{format}",
+                    "value_type": "{value_type}"
+                }
+            }
+        },
+        "search": {
+            "root": {
+                "post_filter": {
+                    "__children_of": "query_dsl"
+                },
+                "search_after": [
+                    {
+                        "__as_type": ["string", "number"]
+                    }
+                ],
+                "slice": {
+                    "field": "{field}",
+                    "id": 0,
+                    "max": 1
+                },
+                "collapse": {
+                    "field": "{field}",
+                    "inner_hits": {}
+                },
+                "track_total_hits": {
+                    "__as_type": ["boolean", "number"]
+                },
+                "terminate_after": 0,
+                "seq_no_primary_term": false,
+                "version": false,
+                "explain": false,
+                "stats": [
+                    {
+                        "__as_type": "string"
+                    }
+                ],
+                "suggest": {
+                    "text": "{text}",
+                    "simple_phrase": {},
+                    "phrase": {},
+                    "term": {}
+                },
+                "min_score": 0
+            }
+        }
+    }
+}

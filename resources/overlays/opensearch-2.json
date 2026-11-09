@@ -1,0 +1,54 @@
+{
+    "graphs": {
+        "*": {
+            "query": {
+                "neural": {
+                    "field": "{field}",
+                    "query_text": "{query_text}",
+                    "model_id": "{model_id}",
+                    "k": 10
+                },
+                "neural_sparse": {
+                    "field": "{field}",
+                    "query_text": "{query_text}",
+                    "model_id": "{model_id}"
+                },
+                "hybrid": {
+                    "queries": [],
+                    "pagination_depth": 10
+                },
+                "semantic": {
+                    "field": "{field}",
+                    "query": "{query}",
+                    "boost": 1
+                },
+                "script_score": {
+                    "query": {
+                        "__children_of": "query_dsl"
+                    },
+                    "script": {
+                        "source": "{source}",
+                        "params": {}
+                    },
+                    "min_score": 0
+                }
+            },
+            "aggregations/{name}": {
+                "filtered": {
+                    "filter": {
+                        "__children_of": "query_dsl"
+                    }
+                }
+            }
+        },
+        "search": {
+            "root": {
+                "search_pipeline": "{search_pipeline}",
+                "derived": {
+                    "{field}": {}
+                },
+                "ext": {}
+            }
+        }
+    }
+}

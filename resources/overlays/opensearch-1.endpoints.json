@@ -1,0 +1,184 @@
+{
+    "opensearch.knn.stats": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_plugins/_knn/stats", "/_plugins/_knn/{node_id}/stats"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/knn/api/"
+    },
+    "opensearch.knn.warmup": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_plugins/_knn/warmup/{index}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/knn/api/"
+    },
+    "opensearch.knn.search": {
+        "methods": ["POST", "GET"],
+        "url": {
+            "paths": ["/_search"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/knn/knn-index/"
+    },
+    "opensearch.security.account": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_plugins/_security/api/account"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.security.roles": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_security/api/roles", "/_plugins/_security/api/roles/{role}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.security.rolesmapping": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_security/api/rolesmapping", "/_plugins/_security/api/rolesmapping/{role}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.security.internalusers": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_security/api/internalusers", "/_plugins/_security/api/internalusers/{username}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.security.actiongroups": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_security/api/actiongroups", "/_plugins/_security/api/actiongroups/{action_group}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.security.tenants": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_security/api/tenants", "/_plugins/_security/api/tenants/{tenant}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.security.audit": {
+        "methods": ["GET", "PUT"],
+        "url": {
+            "paths": ["/_plugins/_security/api/audit"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security/access-control/api/"
+    },
+    "opensearch.alerting.monitors": {
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_alerting/monitors/_search", "/_plugins/_alerting/monitors/{monitor_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/alerting/api/"
+    },
+    "opensearch.alerting.destinations": {
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_alerting/destinations", "/_plugins/_alerting/destinations/{destination_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/alerting/api/"
+    },
+    "opensearch.ism.policies": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_ism/policies", "/_plugins/_ism/policies/{policy_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/ism/api/"
+    },
+    "opensearch.ism.explain": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_plugins/_ism/explain", "/_plugins/_ism/explain/{index}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/ism/api/"
+    },
+    "opensearch.ism.add": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ism/add/{index}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/ism/api/"
+    },
+    "opensearch.ism.remove": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ism/remove/{index}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/ism/api/"
+    },
+    "opensearch.ism.change_policy": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ism/change_policy/{index}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/ism/api/"
+    },
+    "opensearch.ism.retry": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ism/retry/{index}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/ism/api/"
+    },
+    "opensearch.anomaly_detection.detectors": {
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_anomaly_detection/detectors/_search", "/_plugins/_anomaly_detection/detectors/{detector_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/ad/api/"
+    },
+    "opensearch.sql.query": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_sql", "/_plugins/_sql/_explain", "/_plugins/_sql/close"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/sql/sql-ppl-api/"
+    },
+    "opensearch.ppl.query": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ppl", "/_plugins/_ppl/_explain"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/sql/sql-ppl-api/"
+    },
+    "opensearch.notebooks": {
+        "methods": ["GET", "POST"],
+        "url": {
+            "paths": ["/_plugins/_notebooks/notebooks/{notebook_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/notebooks/"
+    },
+    "opensearch.snapshot.repository": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_snapshot/{repository}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/snapshots/snapshot-restore/"
+    },
+    "opensearch.snapshot.snapshot": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_snapshot/{repository}/{snapshot}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/snapshots/snapshot-restore/"
+    },
+    "opensearch.replication.start": {
+        "methods": ["PUT", "POST"],
+        "url": {
+            "paths": ["/_plugins/_replication/{index}/_start", "/_plugins/_replication/{index}/_stop", "/_plugins/_replication/{index}/_pause", "/_plugins/_replication/{index}/_resume", "/_plugins/_replication/{index}/_update"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/tuning-your-cluster/replication-plugin/api/"
+    },
+    "opensearch.replication.status": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_plugins/_replication/{index}/_status"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/tuning-your-cluster/replication-plugin/api/"
+    }
+}

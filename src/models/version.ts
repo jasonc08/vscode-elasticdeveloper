@@ -43,45 +43,44 @@ export class Version {
 
     public static getClosest(version:Version, versions:string[]): Version {
 
-        let index:number = -1;
         let closest:Version = null;
-        let versionAsString = version.toString();
-        
-        if(versions.length > 0) {
-            let groups = versions[0].split('.').length;
-            versionAsString = versionAsString.split('.').splice(0, groups).join('.');
+
+        if(!version || !versions || versions.length === 0) {
+            return closest;
         }
 
-        index = versions.findIndex((v) => {
-            return v === versionAsString;
-        });
-        
-        if(index === -1) {
+        let versionAsString = version.toString();
+        let groups = versions[0].split('.').length;
+        versionAsString = versionAsString.split('.').splice(0, groups).join('.');
 
-            let collator = new Intl.Collator(undefined, { numeric:true });
-        
-            versions.push(versionAsString);
-            versions.sort(collator.compare);
-            
-            index = versions.findIndex((v) => {
-                return v === versionAsString;
-            });
+        let index = versions.findIndex((v) => v === versionAsString);
 
-            if(index > -1) {
+        if(index > -1) {
+            return Version.parse(versions[index]);
+        }
 
-                let closestAsString;
+        // Work on a copy: callers pass their resource folder listing and must not
+        // be modified. This used to push the requested version into that array.
+        let sorted = versions.slice();
+        let collator = new Intl.Collator(undefined, { numeric:true });
+        sorted.push(versionAsString);
+        sorted.sort(collator.compare);
 
-                if(index === (versions.length - 1)) {
-                    closestAsString = versions[index-1];
-                } else {
-                    closestAsString = versions[index+1];
-                }
+        index = sorted.findIndex((v) => v === versionAsString);
 
-                closest = Version.parse(closestAsString); 
-            }    
+        if(index > -1) {
+            let closestAsString;
 
-        } else {
-            closest = Version.parse(versions[index]); 
+            if(index === (sorted.length - 1)) {
+                // Requested version is newer than everything available.
+                closestAsString = sorted[index - 1];
+            } else {
+                closestAsString = sorted[index + 1];
+            }
+
+            if(closestAsString) {
+                closest = Version.parse(closestAsString);
+            }
         }
 
         return closest;

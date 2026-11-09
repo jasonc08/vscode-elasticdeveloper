@@ -5,7 +5,20 @@ export const Publisher = 'crasnam';
 export const ExtensionId = Publisher + '.' + Name;
 export const WorkspaceStateEnvironmentPath = 'environment.path';
 export const CommandPrefix = Name;
-export const DefaultVersion = '6.3';
+export const DefaultVersion = '6.5';
+
+/**
+ * Supported search engines. Both share the same query DSL, but OpenSearch also
+ * adds its own plugins (`_plugins/*`) and query types.
+ */
+export const EngineElasticsearch = 'elasticsearch';
+export const EngineOpenSearch = 'opensearch';
+
+/**
+ * Elasticsearch is only supported up to 7.10; later releases are OpenSearch and
+ * are versioned on their own scale.
+ */
+export const LastElasticsearchMajorVersion = 7;
 
 export const JsonPathSeperatorChar = '/';
 

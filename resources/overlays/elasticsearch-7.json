@@ -1,0 +1,151 @@
+{
+    "graphs": {
+        "*": {
+            "aggregations/{name}": {
+                "rare_terms": {
+                    "field": "{field}",
+                    "size": 10,
+                    "max_doc_count": 1,
+                    "precision": 0.001,
+                    "missing": ""
+                },
+                "boxplot": {
+                    "field": "{field}",
+                    "missing": 0
+                },
+                "multi_terms": {
+                    "terms": [],
+                    "size": 10,
+                    "order": {}
+                },
+                "variable_width_histogram": {
+                    "field": "{field}",
+                    "buckets": 10
+                },
+                "time_series": {
+                    "field": "{field}"
+                },
+                "top_metrics": {
+                    "metrics": [],
+                    "size": 1,
+                    "sort": {}
+                },
+                "t_test": {
+                    "a": {},
+                    "b": {},
+                    "type": "heteroscedastic"
+                },
+                "random_sampler": {
+                    "probability": 0.1,
+                    "seed": 0
+                },
+                "rate": {
+                    "field": "{field}",
+                    "unit": "{unit}"
+                },
+                "moving_fn": {
+                    "script": "{script}",
+                    "window": 10
+                },
+                "categorize_text": {
+                    "field": "{field}",
+                    "size": 10
+                }
+            },
+            "query": {
+                "intervals": {
+                    "{field}": {
+                        "query": "{query}",
+                        "match": {},
+                        "all_of": {},
+                        "any_of": {},
+                        "prefix": {},
+                        "wildcard": {},
+                        "fuzzy": {},
+                        "regexp": {}
+                    }
+                },
+                "rank_feature": {
+                    "{field}": {
+                        "boost": 1,
+                        "saturation": {
+                            "pivot": 1
+                        },
+                        "log": {
+                            "scaling_factor": 1
+                        },
+                        "sigmoid": {
+                            "pivot": 1,
+                            "exponent": 1
+                        },
+                        "linear": {}
+                    }
+                },
+                "distance_feature": {
+                    "{field}": {
+                        "origin": "{origin}",
+                        "pivot": "{pivot}",
+                        "boost": 1
+                    }
+                },
+                "match_bool_prefix": {
+                    "{field}": {
+                        "__children_of": "match_options"
+                    }
+                },
+                "pinned": {
+                    "ids": [],
+                    "docs": [],
+                    "organic": {
+                        "__children_of": "query_dsl"
+                    }
+                },
+                "combined_fields": {
+                    "fields": [],
+                    "query": "{query}",
+                    "operator": "or",
+                    "boost": 1
+                }
+            }
+        },
+        "search": {
+            "root": {
+                "runtime_mappings": {
+                    "{field}": {
+                        "type": "{type}",
+                        "script": {
+                            "source": "{source}"
+                        }
+                    }
+                },
+                "fields": [
+                    {
+                        "__as_type": ["string", "object"]
+                    }
+                ],
+                "pit": {
+                    "id": "{id}",
+                    "keep_alive": "{keep_alive}"
+                }
+            }
+        },
+        "_mappings": {
+            "{_doc}": {
+                "runtime": {
+                    "{field}": {
+                        "type": "{type}",
+                        "script": {
+                            "source": "{source}"
+                        }
+                    }
+                },
+                "_source": {
+                    "enabled": true,
+                    "includes": [],
+                    "excludes": []
+                },
+                "_meta": {}
+            }
+        }
+    }
+}

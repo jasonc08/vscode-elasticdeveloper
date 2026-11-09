@@ -233,6 +233,13 @@ export class ElasticsearchQueryCompletionManager {
 
         let completionItems:vscode.CompletionItem[] = [];
         let bodyToken = query.tokenAt(offset);
+
+        // The cursor can sit outside of any body token (e.g. right after an
+        // opening brace was removed). Bail out instead of throwing.
+        if(!bodyToken) {
+            return completionItems;
+        }
+
         let offsetInBody = offset - bodyToken.offset;
         let body = bodyToken.text.substr(0, offsetInBody + 1);
         let entityDocumentScanner = new EntityDocumentScanner(body);
@@ -320,10 +327,19 @@ export class ElasticsearchQueryCompletionManager {
                 getNode.push(
                     (step, token, tokens, edges, visited, graph) => {
 
+                        if(!token || !token.propertyValueToken) {
+                            return null;
+                        }
+
                         if(token.propertyValueToken.type === EntityTokenType.OpenEntity) {
 
                             let depth = token.depth;
                             let previousEdge = visited[visited.length -1];
+
+                            if(!previousEdge) {
+                                return null;
+                            }
+
                             let previousNodeEdges = graph.findEdges(e=> e.sourceId == previousEdge.targetId && (
                                 e.kind !== 'array' && e.kind !== 'object' && e.kind !== 'children_of'));
 
@@ -433,12 +449,31 @@ export class ElasticsearchQueryCompletionManager {
                         context = visited[visited.length - 1];
                     }
 
+                    // `context` is only needed to derive the expected value type when the
+                    // cursor is already inside a value. Listing the fields of an object
+                    // works without it, so do not bail out when it is missing.
+
                     let edges = graph.findEdges(e=> e.sourceId == node.id && e.kind != 'children_of');
+                    let seenLabels = new Set<string>();
 
                     while(edges.length > 0) {
                         let edge = edges.pop();
                         let target = graph.getNodeWithId(edge.targetId);
+
+                        // A `__children_of` reference can point at a fragment that is not
+                        // part of this endpoint; skip instead of dereferencing null.
+                        if(!target) {
+                            continue;
+                        }
+
                         let label = target.label;
+
+                        // Nodes with several types produce one edge per type, which would
+                        // otherwise duplicate the same completion item.
+                        if(seenLabels.has(label)) {
+                            continue;
+                        }
+
                         let hasLabel:boolean = true;
                         let kind:string = edge.kind;
                         let propertyPath = token.path + constant.JsonPathSeperatorChar + target.label;
@@ -481,7 +516,7 @@ export class ElasticsearchQueryCompletionManager {
                             } else if(token.hasText && token.propertyValueToken && token.propertyValueToken.type === EntityTokenType.PropertyValue) {
                                 pattern = '{value}';
                                 hasLabel = false;
-                                kind = context.kind;
+                                kind = context ? context.kind : kind;
                             } else if(token.hasText && token.propertyValueToken &&
                                     (
                                         token.propertyValueToken.type === EntityTokenType.OpenArray ||
@@ -564,6 +599,7 @@ export class ElasticsearchQueryCompletionManager {
                                 item.insertText = new vscode.SnippetString(pattern);
                             }
 
+                            seenLabels.add(label);
                             completionItems.push(item);
 
                         }

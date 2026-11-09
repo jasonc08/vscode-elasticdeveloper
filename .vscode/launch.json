@@ -12,7 +12,7 @@
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/out/**/*.js" ],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "npm: compile"
         },
         {
             "name": "Extension Tests",
@@ -23,7 +23,7 @@
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/out/test/**/*.js" ],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "npm: compile"
         }
     ]
 }

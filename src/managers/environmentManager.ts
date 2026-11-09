@@ -19,7 +19,16 @@ export class EnvironmentManager {
     public get workFolder():string {
 
         if(!this._workFolder) {
-            this._workFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+
+            // `workspaceFolders` is undefined when no folder is open (e.g. a single
+            // file was opened with "Open File"). Do not throw while activating.
+            let workspaceFolders = vscode.workspace.workspaceFolders;
+
+            if(workspaceFolders && workspaceFolders.length > 0) {
+                this._workFolder = workspaceFolders[0].uri.fsPath;
+            } else {
+                this._workFolder = '';
+            }
         }
 
         return this._workFolder;

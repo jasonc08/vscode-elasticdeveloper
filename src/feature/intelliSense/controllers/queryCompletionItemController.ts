@@ -15,14 +15,23 @@ export class QueryCompletionItemController extends QueryController
         this.registerCompletionItemProvider(constant.ElasticsearchQueryDocumentSelector, this, '=', '/', ':', '\n', '"', '?', '\&');
     }
 
-    public provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): vscode.ProviderResult<vscode.CompletionItem[] | vscode.CompletionList> {
+    public provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): vscode.ProviderResult<vscode.CompletionList> {
 
-        let completionItems:vscode.CompletionItem[] = []
+        let completionItems:vscode.CompletionItem[] = [];
+
+        // Read the setting per document so toggling it does not require a restart.
+        let configuration = vscode.workspace.getConfiguration(constant.Name, document.uri);
+        let enabled = configuration.get(constant.IntelliSenseConfigurationEnabled);
+
+        if(enabled === false) {
+            return new vscode.CompletionList(completionItems, false);
+        }
+
         let query = this.getQueryWithPosition(position, document);
 
         if(query) {
 
-            let triggerCharacter = context.triggerCharacter;
+            let triggerCharacter = context ? context.triggerCharacter : undefined;
             let offset = document.offsetAt(position);
             let line = document.lineAt(position);
             let range = document.getWordRangeAtPosition(position);
@@ -35,7 +44,7 @@ export class QueryCompletionItemController extends QueryController
             completionItems = manager.getCompletionItems(query, offset, triggerCharacter, line, range);
         }
 
-        return completionItems;
+        return new vscode.CompletionList(completionItems, false);
     }
 
     public resolveCompletionItem?(item: vscode.CompletionItem, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CompletionItem> {

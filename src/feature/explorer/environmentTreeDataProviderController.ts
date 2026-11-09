@@ -30,7 +30,7 @@ export class EnvironmentTreeDataProviderController  extends EnvironmentControlle
             label: element.label,
             tooltip: element.globalId,
             collapsibleState: element.isParent ? vscode.TreeItemCollapsibleState.Collapsed: vscode.TreeItemCollapsibleState.None,
-            iconPath:element.iconPath,
+            iconPath: element.iconPath as string | vscode.Uri | { light: vscode.Uri; dark: vscode.Uri },
             contextValue: element.contextValue
         };
     }

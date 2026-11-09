@@ -1,23 +1,43 @@
-//
-// PLEASE DO NOT MODIFY / DELETE UNLESS YOU KNOW WHAT YOU ARE DOING
-//
-// This file is providing the test runner to use when running extension tests.
-// By default the test runner in use is Mocha based.
-//
-// You can provide your own test runner if you want to override it by exporting
-// a function run(testRoot: string, clb: (error:Error) => void) that the extension
-// host can call to run the tests. The test runner is expected to use console.log
-// to report the results back to the caller. When the tests are finished, return
-// a possible error to the callback or null if none.
+'use strict';
 
-import * as testRunner from 'vscode/lib/testrunner';
-import { reporters } from 'mocha';
+// Test runner entry point used by @vscode/test-electron.
+//
+// The old runner imported `vscode/lib/testrunner`, which only exists in the
+// ancient `vscode` npm package and is not shipped by modern VS Code. Mocha is
+// driven directly instead.
 
-// You can directly control Mocha options by uncommenting the following lines
-// See https://github.com/mochajs/mocha/wiki/Using-mocha-programmatically#set-options for more info
-testRunner.configure({
-    ui: 'tdd', 		// the TDD UI is being used in extension.test.ts (suite, test, etc.)
-    useColors: true // colored output from test results,
-});
+import * as path from 'path';
+import Mocha = require('mocha');
+import { glob } from 'glob';
 
-module.exports = testRunner;
+export function run(): Promise<void> {
+
+    const mocha = new Mocha({
+        ui: 'tdd',
+        color: true,
+        timeout: 10000
+    });
+
+    const testsRoot = path.resolve(__dirname);
+
+    return new Promise<void>((resolve, reject) => {
+
+        glob('**/**.test.js', { cwd: testsRoot })
+            .then((files) => {
+                files.forEach((file) => mocha.addFile(path.resolve(testsRoot, file)));
+
+                try {
+                    mocha.run((failures) => {
+                        if(failures > 0) {
+                            reject(new Error(failures + ' tests failed.'));
+                        } else {
+                            resolve();
+                        }
+                    });
+                } catch(ex) {
+                    reject(ex);
+                }
+            })
+            .catch((ex) => reject(ex));
+    });
+}

@@ -10,7 +10,7 @@ import { ThemeIcon, Uri, env } from "vscode";
 import { Environment } from "../../../models/environment";
 import { EnvironmentTreeDataProviderController } from "../environmentTreeDataProviderController";
 import { EnvironmentDocument } from '../../../parsers/environmentDocument';
-import { isObject, isArray } from 'util';
+import { isObject, isArray } from '../../../helpers/object';
 
 export interface IElasticTreeItem {
 

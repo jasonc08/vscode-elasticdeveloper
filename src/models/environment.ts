@@ -12,13 +12,15 @@ export class Environment extends Entity {
     private _version:Version = null;
     private _host:string;
     private _userAgent:string;
-    
+    private _engine:string;
+
     public static hydrate(environmentAsObject:any):Environment {
 
         let environment: Environment = new Environment();
         environment.host = environmentAsObject._host;
         environment.name = environmentAsObject._name;
         environment.userAgent = environmentAsObject._userAgent;
+        environment.engine = environmentAsObject._engine;
         environment.version = Version.hydrate(environmentAsObject._version);
 
         return environment;
@@ -89,6 +91,27 @@ export class Environment extends Entity {
         return (this._userAgent && this._userAgent.length > 0);
     }
 
+    /**
+     * `elasticsearch` or `opensearch`. Detected from the cluster on ping, but can
+     * also be pinned in the `.esenv` file for clusters that are not reachable.
+     */
+    public get engine():string {
+        return this._engine;
+    }
+
+    public set engine(value:string) {
+
+        if(value) {
+            value = value.toLowerCase();
+        }
+
+        this._engine = value;
+    }
+
+    public get hasEngine():boolean {
+        return (this._engine && this._engine.length > 0);
+    }
+
     public addTextToken(textToken:PropertyToken) {
         
         super.addTextToken(textToken);
@@ -107,6 +130,9 @@ export class Environment extends Entity {
                     break;
                 case "useragent":
                     this.userAgent = textToken.propertyValueToken.text;
+                    break;
+                case "engine":
+                    this.engine = textToken.propertyValueToken.text;
                     break;
             }
 

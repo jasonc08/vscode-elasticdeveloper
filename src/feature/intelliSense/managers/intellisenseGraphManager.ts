@@ -9,8 +9,9 @@ import { Graph, Node, Edge } from "../../../models/graph";
 import { Version } from '../../../models/version';
 import { LogManager } from '../../../managers/logManager';
 import { EnvironmentManager } from '../../../managers/environmentManager';
-import { isArray, isObject } from 'util';
+import { isArray, isObject } from '../../../helpers/object';
 import { IEndpoint } from '../models/IEndpoint';
+import { getDslFileCandidates } from './endpointDslFileMap';
 
 var _intellisenseGraphManager:IntellisenseGraphManager;
 
@@ -84,13 +85,18 @@ export class IntellisenseGraphManager {
         if(endpointFile) {
             files.push(endpointFile);
 
+            // Collect every `__children_of` target before loading anything: a file
+            // can reference a fragment that lives in another imported file, so the
+            // reference set has to be known up front.
+            let childrenOfTargets = this.collectChildrenOfTargets(files);
+
             while(files.length > 0){
                 let file = files.pop();
 
                 if(!imported.find(f=> f === file)) {
                     imported.push(file);
 
-                    const fileContent = fs.readFileSync(file, 'UTF-8');
+                    const fileContent = fs.readFileSync(file, 'utf-8');
                     let source = JSON.parse(fileContent);
                     let keys = Object.keys(source);
 
@@ -109,7 +115,37 @@ export class IntellisenseGraphManager {
 
                         } else if(key.startsWith('__')) {
                             if(key !== '__inactive') {
-                                this.loadEndpointDslGraph(source[key], graph, 100);
+                                if(key === '__templates' && isObject(source[key])) {
+                                    // A template file can hold several shared fragments. The
+                                    // endpoint body template (`index_mappings` for _mapping,
+                                    // `search` for _search, ...) is the only one that becomes
+                                    // top level; every other fragment is reachable through
+                                    // `__children_of` and must stay out of the root.
+                                    let templates = source[key];
+                                    let templateNames = Object.keys(templates);
+                                    let rootTemplate = templateNames.indexOf('index_mappings') > -1
+                                        ? 'index_mappings'
+                                        : null;
+
+                                    for(let templateName of templateNames) {
+                                        let template = templates[templateName];
+
+                                        if(templateName === rootTemplate) {
+                                            this.loadEndpointDslGraph(template, graph, 0);
+                                        } else if(this.isChildrenOfTarget(templates, templateName) ||
+                                                  childrenOfTargets.has(templateName)) {
+                                            // Referenced by `__children_of` (possibly from another
+                                            // imported file): load it under the template name so
+                                            // the reference resolves, and keep it out of the
+                                            // root by using a depth that is never zero.
+                                            this.loadEndpointDslGraph(template, graph, 100, templateName);
+                                        } else {
+                                            this.loadEndpointDslGraph(template, graph, 100);
+                                        }
+                                    }
+                                } else {
+                                    this.loadEndpointDslGraph(source[key], graph, 100);
+                                }
                             }
                             delete source[key];
                         }
@@ -130,42 +166,17 @@ export class IntellisenseGraphManager {
                 }
             }
 
-            let edges = graph.findEdges(edge=> edge.kind === 'children_of');
+            this.composeChildrenOf(graph);
 
-            for(let edge of edges) {
-                let incomingEdges = graph.findEdges(e=> e.targetId == edge.sourceId && e.kind !== 'children_of');
+            // Engine/version specific fields (7.x, 8.x, OpenSearch) are not part of
+            // the bundled 6.x DSL files, so they are layered on afterwards.
+            this.applyOverlays(graph, path.basename(endpointFile, '.json'));
 
-                if(incomingEdges.length > 0) {
-                    let stack:Edge[] = graph.findEdges(e=> e.sourceId == edge.sourceId && e.kind === 'children_of');
-                    let children:string[] = [];
-                    let visited:string[] = [];
+            // Overlays can reference shared fragments through `__children_of` as
+            // well, so the composition has to run once more.
+            this.composeChildrenOf(graph);
 
-                    while(stack.length > 0) {
-                        let current = stack.pop();
-
-                        if(!visited.find(v => v === current.targetId)) {
-                            visited.push(current.targetId);
-
-                            if(current.kind === 'children_of') {
-                                let childrenOfEdges = graph.getEdgesWithSourceId(current.targetId);
-                                childrenOfEdges.forEach(e => stack.push(e));
-                            } else {
-                                children.push(current.targetId);
-                            }
-
-                        }
-
-                    }
-
-                    for(let childNodeId of children) {
-                        let child = graph.getNodeWithId(childNodeId);
-
-                        child.data.types.forEach(t=>
-                            graph.addEdge(edge.sourceId, child.id, null, t)
-                        );
-                    }
-                }
-            }
+            this.addQueryAliases(graph);
 
             this._graphs[endpointId] = graph;
 
@@ -173,12 +184,446 @@ export class IntellisenseGraphManager {
         }
     }
 
-    private loadEndpointDslGraph(source, graph:Graph, startDepth:number = 0) {
+    /**
+     * Copies the nodes reached through `__children_of` onto the referencing node,
+     * so `query: { __children_of: "query_dsl" }` exposes every query type.
+     */
+    private composeChildrenOf(graph:Graph) {
+
+        let edges = graph.findEdges(edge=> edge.kind === 'children_of');
+
+        for(let edge of edges) {
+            let incomingEdges = graph.findEdges(e=> e.targetId == edge.sourceId && e.kind !== 'children_of');
+
+            if(incomingEdges.length > 0) {
+                let stack:Edge[] = graph.findEdges(e=> e.sourceId == edge.sourceId && e.kind === 'children_of');
+                let children:string[] = [];
+                let visited:string[] = [];
+
+                while(stack.length > 0) {
+                    let current = stack.pop();
+
+                    if(!visited.find(v => v === current.targetId)) {
+                        visited.push(current.targetId);
+
+                        if(current.kind === 'children_of') {
+                            let childrenOfEdges = graph.getEdgesWithSourceId(current.targetId);
+                            childrenOfEdges.forEach(e => stack.push(e));
+                        } else {
+                            children.push(current.targetId);
+                        }
+
+                    }
+
+                }
+
+                for(let childNodeId of children) {
+                    let child = graph.getNodeWithId(childNodeId);
+
+                    if(child && child.data && child.data.types) {
+                        child.data.types.forEach(t=>
+                            graph.addEdge(edge.sourceId, child.id, null, t)
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Layers the engine/version specific additions (Elasticsearch 7.x and 8.x,
+     * OpenSearch) on top of a graph that was built from the bundled 6.x files.
+     *
+     * Overlay format:
+     * {
+     *   "graphs": {
+     *     "*": { "<label>/<path>": { .. DSL .. } },   // applies to every graph
+     *     "search": { "root": { .. DSL .. }, "query": { .. DSL .. } },
+     *     "_mappings": { "{_doc}": { .. DSL .. } }
+     *   }
+     * }
+     *
+     * The key is a label path starting at the graph root. A missing path is not an
+     * error: the same overlay is shared by many endpoints.
+     */
+    private applyOverlays(graph:Graph, dslFileName:string) {
+
+        for(let overlayFile of this.getOverlayFiles()) {
+
+            let overlay:any;
+
+            try {
+                overlay = JSON.parse(fs.readFileSync(overlayFile, 'utf-8'));
+            } catch(ex) {
+                LogManager.warning(false, 'failed to load intelliSense overlay %s', overlayFile);
+                continue;
+            }
+
+            let graphs = overlay.graphs || {};
+            let sections:any[] = [];
+
+            if(graphs['*']) {
+                sections.push(graphs['*']);
+            }
+
+            if(graphs[dslFileName]) {
+                sections.push(graphs[dslFileName]);
+            }
+
+            for(let section of sections) {
+
+                for(let labelPath of Object.keys(section)) {
+
+                    let target = this.findNodeByLabelPath(graph, labelPath);
+
+                    if(!target) {
+                        continue;
+                    }
+
+                    this.mergeOverlaySection(graph, target, section[labelPath]);
+                }
+            }
+        }
+
+        for(let node of graph.getNodes()) {
+            if(node.data && node.data.isDynamicNode === undefined) {
+                node.data.isDynamicNode = node.label.endsWith('}');
+            }
+        }
+    }
+
+    /**
+     * Adds the overlay fields to `target`, descending into fields that already
+     * exist so a newer overlay can extend what an older one contributed (e.g. the
+     * OpenSearch 3 additions to the `knn` query introduced by OpenSearch 2).
+     */
+    private mergeOverlaySection(graph:Graph, target:Node, section:any) {
+
+        if(!section || typeof section !== 'object') {
+            return;
+        }
+
+        let existing: { [label:string]: Node } = {};
+
+        graph.getEdgesWithSourceId(target.id).forEach(e=> {
+            let node = graph.getNodeWithId(e.targetId);
+
+            if(node) {
+                existing[node.label] = node;
+            }
+        });
+
+        let additions:any = {};
+        let depth = target.data && target.data.depth >= 0 ? target.data.depth + 1 : 0;
+
+        for(let field of Object.keys(section)) {
+
+            let value = section[field];
+            let existingNode = existing[field];
+
+            if(!existingNode) {
+                additions[field] = value;
+                continue;
+            }
+
+            // Only object-like nodes can be extended; scalars and arrays keep the
+            // definition that is already there.
+            if(value && typeof value === 'object' && !isArray(value) && !value.__as_type) {
+                this.mergeOverlaySection(graph, existingNode, value);
+            }
+        }
+
+        if(Object.keys(additions).length > 0) {
+            this.loadEndpointDslGraph(additions, graph, depth, target.id);
+        }
+    }
+
+    private findNodeByLabelPath(graph:Graph, labelPath:string):Node {
+
+        let current:any = graph.getNodeWithId('root');
+
+        if(!current) {
+            return null;
+        }
+
+        if(!labelPath || labelPath === 'root' || labelPath === '$') {
+            return current;
+        }
+
+        for(let label of labelPath.split('/')) {
+
+            let next:any = null;
+
+            for(let edge of graph.getEdgesWithSourceId(current.id)) {
+                let node = graph.getNodeWithId(edge.targetId);
+
+                if(node && node.label === label) {
+                    next = node;
+                    break;
+                }
+            }
+
+            if(!next) {
+                return null;
+            }
+
+            current = next;
+        }
+
+        return current;
+    }
+
+    private getOverlayFiles():string[] {
+        return this.getOverlayFilesWithSuffix('.json');
+    }
+
+    private getOverlayEndpointFiles():string[] {
+        return this.getOverlayFilesWithSuffix('.endpoints.json');
+    }
+
+    /**
+     * Overlays are cumulative: a 7.x cluster keeps everything added in 6.x, and
+     * OpenSearch 2.x keeps the 1.x additions.
+     *
+     * Elasticsearch is only supported up to 7.10 - everything newer is
+     * OpenSearch, which is versioned separately (1.x / 2.x / 3.x).
+     *
+     * File names are `<engine>-<version><suffix>` where `<version>` is a major
+     * version (`opensearch-3.json`) or a full one (`opensearch-3.2.json`). Major
+     * overlays are applied first, then the minor ones, oldest to newest, so that
+     * a minor overlay can refine what its major overlay added.
+     */
+    private getOverlayFilesWithSuffix(suffix:string):string[] {
+
+        let engine = this.getEngine();
+        let major = this.getMajorVersion();
+        let minor = this.getMinorVersion();
+        let start = engine === constant.EngineOpenSearch ? 1 : 6;
+
+        if(engine !== constant.EngineOpenSearch) {
+            // Last Elasticsearch version this extension knows about.
+            major = Math.min(major, constant.LastElasticsearchMajorVersion);
+        }
+
+        let extension = vscode.extensions.getExtension(constant.ExtensionId);
+        let files:string[] = [];
+
+        if(!extension) {
+            return files;
+        }
+
+        let overlaysFolder = path.join(extension.extensionPath, 'resources', 'overlays');
+
+        let pushIfExists = (version:string) => {
+            let filePath = path.join(overlaysFolder, engine + '-' + version + suffix);
+
+            if(fs.existsSync(filePath)) {
+                files.push(filePath);
+            }
+        };
+
+        for(let version = start; version <= major; version++) {
+
+            pushIfExists(version.toString());
+
+            // Minor overlays only make sense for the major version in use.
+            if(version === major && minor !== null && minor !== undefined) {
+                for(let m = 0; m <= minor; m++) {
+                    pushIfExists(version + '.' + m);
+                }
+            }
+        }
+
+        return files;
+    }
+
+    private getEngine():string {
+
+        let environment = EnvironmentManager.get().environment;
+
+        if(environment && environment.hasEngine) {
+            return environment.engine;
+        }
+
+        return constant.EngineElasticsearch;
+    }
+
+    private getMajorVersion():number {
+
+        let environment = EnvironmentManager.get().environment;
+
+        if(environment && environment.hasVersion) {
+            return environment.version.major;
+        }
+
+        return Version.parse(constant.DefaultVersion).major;
+    }
+
+    private getMinorVersion():number {
+
+        let environment = EnvironmentManager.get().environment;
+
+        if(environment && environment.hasVersion) {
+            let minor = environment.version.minor;
+            return minor === null || minor === undefined ? null : minor;
+        }
+
+        return Version.parse(constant.DefaultVersion).minor;
+    }
+
+    /**
+     * Elasticsearch accepts a few short names for long standing body fields.
+     * The shipped spec only documents the canonical one, so the alias is mirrored
+     * onto the graph to keep it discoverable through completion.
+     */
+    private addQueryAliases(graph:Graph) {
+
+        let aliases:{ [alias:string]: string } = {
+            'aggs': 'aggregations'
+        };
+
+        for(let alias of Object.keys(aliases)) {
+
+            let canonical = aliases[alias];
+            let canonicalNode = graph.findNode(n=> n.label === canonical && n.data && n.data.depth === 0);
+
+            if(!canonicalNode || graph.findNode(n=> n.label === alias && n.data && n.data.depth === 0)) {
+                continue;
+            }
+
+            let aliasId = alias;
+
+            graph.addNode(aliasId, alias, {
+                ...canonicalNode.data,
+                id: alias,
+                aliasOf: canonical
+            });
+
+            let canonicalEdges = graph.getEdgesWithSourceId(canonicalNode.id);
+
+            for(let edge of canonicalEdges) {
+                graph.addEdge(aliasId, edge.targetId, null, edge.kind);
+            }
+
+            if(canonicalNode.data.types) {
+                canonicalNode.data.types.forEach(t=> graph.addEdge('root', aliasId, null, t));
+            }
+        }
+    }
+
+    /**
+     * Walks the endpoint file and everything it imports, collecting every id that
+     * is referenced through `__children_of`.
+     */
+    private collectChildrenOfTargets(startFiles:string[]): Set<string> {
+
+        let targets = new Set<string>();
+        let pending = startFiles.slice();
+        let visited:string[] = [];
+
+        while(pending.length > 0) {
+
+            let file = pending.pop();
+
+            if(!file || visited.indexOf(file) > -1) {
+                continue;
+            }
+
+            visited.push(file);
+
+            let source:any;
+
+            try {
+                source = JSON.parse(fs.readFileSync(file, 'utf-8'));
+            } catch(ex) {
+                continue;
+            }
+
+            this.collectChildrenOfTargetsFrom(source, targets);
+
+            if(isArray(source.__import_file)) {
+                for(let importName of source.__import_file) {
+                    let importedFile = this.getEndpointFile(importName);
+
+                    if(importedFile) {
+                        pending.push(importedFile);
+                    }
+                }
+            }
+        }
+
+        return targets;
+    }
+
+    private collectChildrenOfTargetsFrom(node:any, targets:Set<string>) {
+
+        if(!node || typeof node !== 'object') {
+            return;
+        }
+
+        if(isArray(node)) {
+            for(let entry of node) {
+                this.collectChildrenOfTargetsFrom(entry, targets);
+            }
+            return;
+        }
+
+        let childrenOf = node.__children_of;
+
+        if(isArray(childrenOf)) {
+            for(let id of childrenOf) {
+                if(typeof id === 'string') {
+                    targets.add(id);
+                }
+            }
+        } else if(typeof childrenOf === 'string') {
+            targets.add(childrenOf);
+        }
+
+        for(let key of Object.keys(node)) {
+            if(key !== '__children_of') {
+                this.collectChildrenOfTargetsFrom(node[key], targets);
+            }
+        }
+    }
+
+    private isChildrenOfTarget(templates:any, templateName:string):boolean {
+
+        for(let name of Object.keys(templates)) {
+            let template = templates[name];
+
+            if(!template || typeof template !== 'object') {
+                continue;
+            }
+
+            let childrenOf = template.__children_of;
+
+            // `__children_of` can be a single id or an array of ids.
+            if(isArray(childrenOf) && childrenOf.indexOf(templateName) > -1) {
+                return true;
+            }
+
+            if(childrenOf === templateName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private loadEndpointDslGraph(source, graph:Graph, startDepth:number = 0, rootId:string = null) {
+
+        // When the fragment is referenced through `__children_of`, the reference
+        // points at the fragment itself (e.g. `mappings_properties`). Create that
+        // node so the reference can be resolved during graph composition.
+        if(rootId && isObject(source) && !graph.getNodeWithId(rootId)) {
+            graph.addNode(rootId, rootId, { depth: startDepth - 1, types: ['object'] });
+        }
 
         let stack:any[] = [];
         stack.push( {
             source: source,
-            path: null,
+            path: rootId,
             types: [],
             depth: startDepth
         });
@@ -212,22 +657,23 @@ export class IntellisenseGraphManager {
 
                         } else if(isObject(current)) {
 
+                            let currentObject:any = current;
                             let type = 'object';
 
-                            if(current.__as_type) {
+                            if(currentObject.__as_type) {
 
-                                if(isArray(current.__as_type)) {
-                                    current.__as_type.forEach(t=> types.push(t));
+                                if(isArray(currentObject.__as_type)) {
+                                    currentObject.__as_type.forEach(t=> types.push(t));
                                 } else {
-                                    types.push(current.__as_type);
+                                    types.push(currentObject.__as_type);
                                 }
                             } else {
                                 types.push(type);
                             }
 
-                            if(current.__array || current.__object || current.__string) {
+                            if(currentObject.__array || currentObject.__object || currentObject.__string) {
 
-                                if(current.__array) {
+                                if(currentObject.__array) {
 
                                     graph.addNode(nodeId + '-array', key, {
                                         id: key,
@@ -236,10 +682,10 @@ export class IntellisenseGraphManager {
                                     });
 
                                     graph.addEdge(path, nodeId + '-array', null, 'array');
-                                    stack.push({ source: current.__array, path: nodeId + '-array', types: ['array'], depth: context.depth + 1});
+                                    stack.push({ source: currentObject.__array, path: nodeId + '-array', types: ['array'], depth: context.depth + 1});
                                 }
 
-                                if(current.__object) {
+                                if(currentObject.__object) {
 
                                     graph.addNode(nodeId + '-object', key, {
                                         id: key,
@@ -248,10 +694,10 @@ export class IntellisenseGraphManager {
                                     });
 
                                     graph.addEdge(path, nodeId + '-object', null, 'object');
-                                    stack.push({ source:current.__object, path: nodeId + '-object', types: ['object'], depth: context.depth + 1});
+                                    stack.push({ source:currentObject.__object, path: nodeId + '-object', types: ['object'], depth: context.depth + 1});
                                 }
 
-                                if(current.__string) {
+                                if(currentObject.__string) {
 
                                     graph.addNode(nodeId + '-string', key, {
                                         id: key,
@@ -260,7 +706,7 @@ export class IntellisenseGraphManager {
                                     });
 
                                     graph.addEdge(path, nodeId + '-string', null, 'string');
-                                    stack.push({ source:current.__string, path: nodeId + '-string', types: ['string'], depth: context.depth + 1});
+                                    stack.push({ source:currentObject.__string, path: nodeId + '-string', types: ['string'], depth: context.depth + 1});
                                 }
 
                             } else {
@@ -336,14 +782,15 @@ export class IntellisenseGraphManager {
 
                 if(isObject(arrayEntry)) {
 
+                    let arrayEntryObject:any = arrayEntry;
                     let arrayEntryType = 'object';
 
-                    if(arrayEntry.__as_type) {
+                    if(arrayEntryObject.__as_type) {
 
-                        if(isArray(arrayEntry.__as_type)) {
-                            arrayEntry.__as_type.forEach(t=> arrayEntryTypes.push(t));
+                        if(isArray(arrayEntryObject.__as_type)) {
+                            arrayEntryObject.__as_type.forEach(t=> arrayEntryTypes.push(t));
                         } else {
-                            arrayEntryTypes.push(arrayEntry.__as_type);
+                            arrayEntryTypes.push(arrayEntryObject.__as_type);
                         }
 
                     } else {
@@ -380,91 +827,63 @@ export class IntellisenseGraphManager {
 
     private loadEndpointGraphs() {
 
+        let definitions:{ endpointId:string, endpoint:IEndpoint, params:any }[] = [];
         let files = this.getEndpointSpecificationFiles();
 
         for(let file of files) {
 
-            const fileContent = fs.readFileSync(file, 'UTF-8');
+            const fileContent = fs.readFileSync(file, 'utf-8');
             let source = JSON.parse(fileContent);
             let endpointId = Object.keys(source)[0];
-            let endpoint:IEndpoint = source[endpointId];
-            endpointId = 'endpoint_' + endpointId;
-            this._endpoints[endpointId] = endpoint;
 
-            if(endpoint.methods) {
+            definitions.push({
+                endpointId: endpointId,
+                endpoint: source[endpointId],
+                params: source.params || {}
+            });
+        }
 
-                for(let method of endpoint.methods) {
+        // OpenSearch plugins (`_plugins/*`) are not part of the bundled
+        // rest-api-spec, so they are contributed through overlay files.
+        for(let file of this.getOverlayEndpointFiles()) {
 
-                    let key = 'method_' + method.toLowerCase();
+            try {
+                const fileContent = fs.readFileSync(file, 'utf-8');
+                let source = JSON.parse(fileContent);
+                let params = source.params || {};
 
-                    if(!this._graphs[key]) {
-                        this._graphs[key] = new Graph();
+                for(let endpointId of Object.keys(source)) {
+
+                    if(endpointId === 'params') {
+                        continue;
                     }
 
-                    let graph = this._graphs[key];
+                    let endpoint = source[endpointId];
 
-                    graph.addNode(endpointId, endpointId, { kind: 'endpoint' });
-
-                    if(endpoint.url && endpoint.url.params) {
-                        let parameterNames = Object.keys(endpoint.url.params);
-
-                        for(let name of parameterNames) {
-                            let parameter = endpoint.url.params[name];
-                            let parameterId = endpointId + '/' + name;
-                            graph.addNode(parameterId, name, {
-                                kind: 'parameter',
-                                ...parameter
-                             });
-                            graph.addEdge(endpointId, parameterId);
-                        }
-
+                    if(!endpoint || !endpoint.methods || !endpoint.url || !endpoint.url.paths) {
+                        continue;
                     }
 
-                    for(let path of endpoint.url.paths) {
-                        let steps:string[] = path.split('/').splice(1);
-                        let previousStepId:string = null;
-
-                        for(let index = 0; index < steps.length; index++) {
-                            let step = steps[index];
-                            let stepId = step;
-
-                            if(stepId.length == 0 && steps.length == 1) {
-                                stepId = '/';
-                                step = '/';
-                            }
-
-                            if(previousStepId) {
-                                stepId = previousStepId + '/'+ step;
-                            }
-
-                            graph.addNode(stepId, step, { kind: 'step' });
-
-                            if(index == steps.length - 1) {
-                                graph.addEdge(stepId, endpointId);
-                            }
-
-                            if(previousStepId) {
-                                graph.addEdge(previousStepId, stepId);
-                            }
-
-                            previousStepId = stepId;
-                        }
-                    }
+                    definitions.push({ endpointId: endpointId, endpoint: endpoint, params: params });
                 }
+            } catch(ex) {
+                LogManager.warning(false, 'failed to load endpoint overlay %s', file);
             }
+        }
+
+        for(let definition of definitions) {
+            this.addEndpointToMethodGraphs(definition.endpointId, definition.endpoint);
         }
 
         let graphNames = Object.keys(this._graphs);
 
-        for(let file of files) {
-            const fileContent = fs.readFileSync(file, 'UTF-8');
-            let source = JSON.parse(fileContent);
+        for(let definition of definitions) {
 
-            if(!source.params) {
-                source.params = {};
+            let parameterNames = Object.keys(definition.params || {});
+
+            if(parameterNames.length === 0) {
+                continue;
             }
-
-            let parameterNames = Object.keys(source.params);
 
             for(let graphName of graphNames) {
                 if(graphName.startsWith('method_')) {
@@ -474,7 +893,7 @@ export class IntellisenseGraphManager {
                     for(let node of nodes) {
 
                         for(let name of parameterNames) {
-                            let parameter = source.params[name];
+                            let parameter = definition.params[name];
                             let parameterId = node.id + '/' + name;
                             graph.addNode(parameterId, name, {
                                 kind: 'parameter',
@@ -506,6 +925,75 @@ export class IntellisenseGraphManager {
         }
     }
 
+    private addEndpointToMethodGraphs(endpointId:string, endpoint:IEndpoint) {
+
+        if(!endpointId || !endpoint || !endpoint.methods) {
+            return;
+        }
+
+        let graphEndpointId = 'endpoint_' + endpointId;
+        this._endpoints[graphEndpointId] = endpoint;
+
+        for(let method of endpoint.methods) {
+
+            let key = 'method_' + method.toLowerCase();
+
+            if(!this._graphs[key]) {
+                this._graphs[key] = new Graph();
+            }
+
+            let graph = this._graphs[key];
+
+            graph.addNode(graphEndpointId, graphEndpointId, { kind: 'endpoint' });
+
+            if(endpoint.url && endpoint.url.params) {
+                let parameterNames = Object.keys(endpoint.url.params);
+
+                for(let name of parameterNames) {
+                    let parameter = endpoint.url.params[name];
+                    let parameterId = graphEndpointId + '/' + name;
+                    graph.addNode(parameterId, name, {
+                        kind: 'parameter',
+                        ...parameter
+                     });
+                    graph.addEdge(graphEndpointId, parameterId);
+                }
+
+            }
+
+            for(let path of endpoint.url.paths) {
+                let steps:string[] = path.split('/').splice(1);
+                let previousStepId:any = null;
+
+                for(let index = 0; index < steps.length; index++) {
+                    let step = steps[index];
+                    let stepId = step;
+
+                    if(stepId.length == 0 && steps.length == 1) {
+                        stepId = '/';
+                        step = '/';
+                    }
+
+                    if(previousStepId) {
+                        stepId = previousStepId + '/'+ step;
+                    }
+
+                    graph.addNode(stepId, step, { kind: 'step' });
+
+                    if(index == steps.length - 1) {
+                        graph.addEdge(stepId, graphEndpointId);
+                    }
+
+                    if(previousStepId) {
+                        graph.addEdge(previousStepId, stepId);
+                    }
+
+                    previousStepId = stepId;
+                }
+            }
+        }
+    }
+
     private getEndpointSpecificationFiles():string[] {
 
         let files:string[] = [];
@@ -526,28 +1014,38 @@ export class IntellisenseGraphManager {
 
     private getEndpointFile(endpointId:string):string {
 
-        if(endpointId.startsWith('endpoint_')) {
-            endpointId = endpointId.replace('endpoint_', '');
+        if(!endpointId) {
+            return null;
         }
 
         let extension = vscode.extensions.getExtension(constant.ExtensionId);
         let versionNumbers:string[] = [];
-        let file:string = null;
+        let file:any = null;
 
         versionNumbers.push(this.getDefaultVersionNumber());
         versionNumbers.push(this.getVersionNumber());
 
-        while(versionNumbers.length > 0) {
+        // The endpoint key from rest-api-spec (e.g. `indices.get_mapping`) does not
+        // always match the Query DSL file name in `endpoints/` (e.g. `_mappings`),
+        // so every candidate name is tried before giving up.
+        let candidates = getDslFileCandidates(endpointId);
 
-            let versionNumber = versionNumbers.pop();
-            file =  path.join(extension.extensionPath, 'resources', versionNumber, 'endpoints', endpointId + '.json');
+        for(let versionNumber of versionNumbers) {
 
-            if(fs.existsSync(file)) {
-                break;
-            } else {
-                file = null;
+            if(!versionNumber) {
+                continue;
             }
 
+            let folderPath = path.join(extension.extensionPath, 'resources', versionNumber, 'endpoints');
+
+            for(let candidate of candidates) {
+
+                let candidatePath = path.join(folderPath, candidate + '.json');
+
+                if(fs.existsSync(candidatePath)) {
+                    return candidatePath;
+                }
+            }
         }
 
         return file;
@@ -578,18 +1076,57 @@ export class IntellisenseGraphManager {
         return jsonFiles;
     }
 
+    private getVersionFolders():string[] {
+
+        let extension = vscode.extensions.getExtension(constant.ExtensionId);
+
+        if(!extension) {
+            return [];
+        }
+
+        let folderPath = path.join(extension.extensionPath, 'resources');
+
+        if(!fs.existsSync(folderPath)) {
+            return [];
+        }
+
+        // Only folders named like a version are candidates; `overlays` lives here too.
+        return fs.readdirSync(folderPath)
+            .filter(f=> /^\d+(\.\d+)*$/.test(f))
+            .filter(f=> fs.statSync(path.join(folderPath, f)).isDirectory());
+    }
+
+    private getNewestVersionWithEndpoints(folders:string[]):string {
+
+        let extension = vscode.extensions.getExtension(constant.ExtensionId);
+
+        if(!extension || folders.length === 0) {
+            return null;
+        }
+
+        let withEndpoints = folders.filter(f=>
+            fs.existsSync(path.join(extension.extensionPath, 'resources', f, 'endpoints'))
+        );
+
+        let candidates = withEndpoints.length > 0 ? withEndpoints : folders;
+
+        let sorted = candidates.slice().sort((a, b)=> {
+            let left = Version.parse(a);
+            let right = Version.parse(b);
+
+            return (left.major - right.major) ||
+                ((left.minor || 0) - (right.minor || 0)) ||
+                ((left.patch || 0) - (right.patch || 0));
+        });
+
+        return sorted[sorted.length - 1];
+    }
+
     private getDefaultVersionNumber():string {
 
         let versionNumber:string = null;
-
-        let extension = vscode.extensions.getExtension(constant.ExtensionId);
-        let folderPath = path.join(extension.extensionPath, 'resources');
         let version = Version.parse(constant.DefaultVersion);
-
-        let folders = fs.readdirSync(folderPath)
-            .filter(
-                f=> fs.statSync(path.join(folderPath, f)).isDirectory()
-            );
+        let folders = this.getVersionFolders();
 
         let closestVersion = Version.getClosest(version, folders);
 
@@ -608,21 +1145,21 @@ export class IntellisenseGraphManager {
             versionNumber = this._versionNumber;
         } else {
             let environment = EnvironmentManager.get().environment;
-
-            let extension = vscode.extensions.getExtension(constant.ExtensionId);
-            let folderPath = path.join(extension.extensionPath, 'resources');
-
-            let folders = fs.readdirSync(folderPath)
-                .filter(
-                    f=> fs.statSync(path.join(folderPath, f)).isDirectory()
-                );
+            let folders = this.getVersionFolders();
 
             if(environment && environment.hasVersion) {
 
-                let closestVersion = Version.getClosest(environment.version, folders);
+                if(this.getEngine() === constant.EngineOpenSearch || environment.version.major >= 6) {
+                    // 7.x/8.x and OpenSearch are not bundled as their own folders.
+                    // They reuse the newest (6.5) endpoint files plus overlays, so the
+                    // closest-version lookup must not drag the base back to 2.x/5.x.
+                    versionNumber = this.getNewestVersionWithEndpoints(folders);
+                } else {
+                    let closestVersion = Version.getClosest(environment.version, folders);
 
-                if(closestVersion) {
-                    versionNumber = closestVersion.toString();
+                    if(closestVersion) {
+                        versionNumber = closestVersion.toString();
+                    }
                 }
 
             } else if(environment) {

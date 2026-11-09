@@ -1,0 +1,65 @@
+{
+    "graphs": {
+        "*": {
+            "query": {
+                "hybrid": {
+                    "queries": [],
+                    "pagination_depth": 10,
+                    "normalization": "min_max",
+                    "combination": {
+                        "technique": "arithmetic_mean",
+                        "parameters": {
+                            "weights": []
+                        }
+                    }
+                },
+                "knn": {
+                    "field": "{field}",
+                    "vector": [],
+                    "k": 10,
+                    "min_score": 0,
+                    "max_distance": 1,
+                    "filter": {
+                        "__children_of": "query_dsl"
+                    },
+                    "explain": true
+                },
+                "neural": {
+                    "field": "{field}",
+                    "query_text": "{query_text}",
+                    "model_id": "{model_id}",
+                    "k": 10,
+                    "min_score": 0,
+                    "filter": {
+                        "__children_of": "query_dsl"
+                    }
+                },
+                "neural_sparse": {
+                    "field": "{field}",
+                    "query_text": "{query_text}",
+                    "model_id": "{model_id}",
+                    "max_token_score": 0
+                }
+            },
+            "aggregations/{name}": {
+                "derived": {
+                    "{field}": {
+                        "type": "histogram",
+                        "interval": 10
+                    }
+                },
+                "filtered": {
+                    "filter": {
+                        "__children_of": "query_dsl"
+                    }
+                }
+            }
+        },
+        "search": {
+            "root": {
+                "ext": {},
+                "search_pipeline": "{search_pipeline}"
+            }
+        }
+    }
+}

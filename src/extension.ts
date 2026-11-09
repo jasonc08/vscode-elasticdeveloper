@@ -24,8 +24,9 @@ import { IntellisenseCommandController } from './feature/intelliSense/controller
 
 export function activate(context: vscode.ExtensionContext) {
 
-    let configuration = vscode.workspace.getConfiguration();
+    let configuration = vscode.workspace.getConfiguration(constant.Name);
     let value = configuration.get(constant.IntelliSenseConfigurationEnabled);
+    let isIntelliSenseEnabled = value !== false && value !== 'false';
 
     LogManager.verbose('elasticdeveloper extension activated');
     LogManager.verbose('elasticdeveloper decorating EnvironmentManager');
@@ -47,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
     controllers.push(new ScriptCommandController());
     controllers.push(new IntellisenseCommandController());
     
-    if(value) {
+    if(isIntelliSenseEnabled) {
         controllers.push(new QueryCompletionItemController());
     }
     

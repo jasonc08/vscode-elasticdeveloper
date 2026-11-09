@@ -1,6 +1,7 @@
 'use strict'
 
 import * as vscode from 'vscode';
+import * as constant from '../constant';
 import * as elasticsearchQueryFactory from '../models/elasticsearchQuery';
 
 import { Controller } from './controller';
@@ -16,6 +17,16 @@ export class EnvironmentController extends Controller {
 
         if(response.completed) {
             environment.version = Version.parse(response.body.version.number);
+
+            // OpenSearch reports itself in the same shape but marks the
+            // distribution explicitly.
+            let distribution = response.body.version.distribution;
+
+            if(distribution === constant.EngineOpenSearch) {
+                environment.engine = constant.EngineOpenSearch;
+            } else if(!environment.hasEngine) {
+                environment.engine = constant.EngineElasticsearch;
+            }
         }
 
         this.environment = environment;

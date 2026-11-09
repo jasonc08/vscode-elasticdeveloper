@@ -1,0 +1,184 @@
+{
+    "graphs": {
+        "*": {
+            "query": {
+                "knn": {
+                    "field": "{field}",
+                    "vector": [],
+                    "query_vector": [],
+                    "k": 10
+                },
+                "intervals": {
+                    "{field}": {
+                        "query": "{query}",
+                        "match": {},
+                        "all_of": {},
+                        "any_of": {},
+                        "prefix": {},
+                        "wildcard": {},
+                        "fuzzy": {},
+                        "regexp": {}
+                    }
+                },
+                "rank_feature": {
+                    "{field}": {
+                        "boost": 1,
+                        "saturation": {
+                            "pivot": 1
+                        },
+                        "log": {
+                            "scaling_factor": 1
+                        },
+                        "sigmoid": {
+                            "pivot": 1,
+                            "exponent": 1
+                        },
+                        "linear": {}
+                    }
+                },
+                "distance_feature": {
+                    "{field}": {
+                        "origin": "{origin}",
+                        "pivot": "{pivot}",
+                        "boost": 1
+                    }
+                },
+                "match_bool_prefix": {
+                    "{field}": {
+                        "__children_of": "match_options"
+                    }
+                },
+                "pinned": {
+                    "ids": [],
+                    "docs": [],
+                    "organic": {
+                        "__children_of": "query_dsl"
+                    }
+                }
+            },
+            "aggregations/{name}": {
+                "rare_terms": {
+                    "field": "{field}",
+                    "size": 10,
+                    "max_doc_count": 1,
+                    "precision": 0.001
+                },
+                "boxplot": {
+                    "field": "{field}",
+                    "missing": 0
+                },
+                "top_metrics": {
+                    "metrics": [],
+                    "size": 1,
+                    "sort": {}
+                },
+                "multi_terms": {
+                    "terms": [],
+                    "size": 10,
+                    "order": {}
+                },
+                "variable_width_histogram": {
+                    "field": "{field}",
+                    "buckets": 10
+                },
+                "auto_date_histogram": {
+                    "field": "{field}",
+                    "buckets": 10,
+                    "format": "{format}"
+                },
+                "bucket_sort": {
+                    "sort": [],
+                    "from": 0,
+                    "size": 0,
+                    "gap_policy": "skip"
+                },
+                "weighted_avg": {
+                    "value": {
+                        "field": "{field}",
+                        "missing": 0
+                    },
+                    "weight": {
+                        "field": "{field}",
+                        "missing": 0
+                    },
+                    "format": "{format}"
+                }
+            }
+        },
+        "search": {
+            "root": {
+                "post_filter": {
+                    "__children_of": "query_dsl"
+                },
+                "search_after": [
+                    {
+                        "__as_type": ["string", "number"]
+                    }
+                ],
+                "slice": {
+                    "field": "{field}",
+                    "id": 0,
+                    "max": 1
+                },
+                "collapse": {
+                    "field": "{field}",
+                    "inner_hits": {}
+                },
+                "track_total_hits": {
+                    "__as_type": ["boolean", "number"]
+                },
+                "terminate_after": 0,
+                "seq_no_primary_term": false,
+                "version": false,
+                "explain": false,
+                "stats": [
+                    {
+                        "__as_type": "string"
+                    }
+                ],
+                "suggest": {
+                    "text": "{text}",
+                    "simple_phrase": {},
+                    "phrase": {},
+                    "term": {}
+                },
+                "min_score": 0,
+                "runtime_mappings": {
+                    "{field}": {
+                        "type": "{type}",
+                        "script": {
+                            "source": "{source}"
+                        }
+                    }
+                },
+                "fields": [
+                    {
+                        "__as_type": ["string", "object"]
+                    }
+                ],
+                "pit": {
+                    "id": "{id}",
+                    "keep_alive": "{keep_alive}"
+                }
+            }
+        },
+        "_mappings": {
+            "{_doc}": {
+                "runtime": {
+                    "{field}": {
+                        "type": "{type}",
+                        "script": {
+                            "source": "{source}"
+                        }
+                    }
+                },
+                "_source": {
+                    "enabled": true,
+                    "includes": [],
+                    "excludes": []
+                },
+                "_meta": {}
+            }
+        }
+    }
+}

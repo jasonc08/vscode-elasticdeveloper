@@ -2,7 +2,7 @@
 
 import * as request from 'request'
 import { Graph, Node, Edge } from "../../../models/graph";
-import { isObject } from 'util';
+import { isObject } from '../../../helpers/object';
 import { LogManager } from '../../../managers/logManager';
 
 export class GephiStreamService {
@@ -132,7 +132,7 @@ export class GephiStreamService {
                 }
             }
     
-            return new Promise((resolve, reject) => {
+            return new Promise<void>((resolve, reject) => {
     
                 request(options, (error, response, body)=> {
                     if(error) {

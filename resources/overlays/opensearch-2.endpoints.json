@@ -1,0 +1,100 @@
+{
+    "opensearch.ml.train": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ml/_train/{algorithm_name}", "/_plugins/_ml/_execute/{algorithm_name}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/ml-commons-plugin/api/"
+    },
+    "opensearch.ml.predict": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ml/_predict/{algorithm_name}/{model_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/ml-commons-plugin/api/"
+    },
+    "opensearch.ml.models": {
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_ml/models/_search", "/_plugins/_ml/models/_upload", "/_plugins/_ml/models/{model_id}", "/_plugins/_ml/models/{model_id}/_deploy", "/_plugins/_ml/models/{model_id}/_undeploy"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/ml-commons-plugin/api/"
+    },
+    "opensearch.ml.tasks": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_plugins/_ml/tasks/{task_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/ml-commons-plugin/api/"
+    },
+    "opensearch.ml.memory": {
+        "methods": ["GET", "POST"],
+        "url": {
+            "paths": ["/_plugins/_ml/memory/_search", "/_plugins/_ml/memory/{memory_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/ml-commons-plugin/api/"
+    },
+    "opensearch.notifications.configs": {
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_notifications/configs", "/_plugins/_notifications/configs/{config_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/notifications/api/"
+    },
+    "opensearch.notifications.features": {
+        "methods": ["GET", "POST"],
+        "url": {
+            "paths": ["/_plugins/_notifications/feature/channels", "/_plugins/_notifications/feature/test/{config_id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/notifications/api/"
+    },
+    "opensearch.asynchronous_search": {
+        "methods": ["GET", "POST", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_asynchronous_search", "/_plugins/_asynchronous_search/{id}"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/asynchronous-search/"
+    },
+    "opensearch.transform": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_transform/{transform_id}", "/_plugins/_transform/_preview", "/_plugins/_transform/{transform_id}/_start", "/_plugins/_transform/{transform_id}/_stop"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/index-transforms/transforms-apis/"
+    },
+    "opensearch.rollup": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "url": {
+            "paths": ["/_plugins/_rollup/jobs/{rollup_id}", "/_plugins/_rollup/jobs/{rollup_id}/_start", "/_plugins/_rollup/jobs/{rollup_id}/_stop"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/im-plugin/index-rollups/rollup-api/"
+    },
+    "opensearch.security_analytics.findings": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_security_analytics/findings/_search"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/security-analytics/api-tools/"
+    },
+    "opensearch.observability.object": {
+        "methods": ["GET", "POST"],
+        "url": {
+            "paths": ["/_plugins/_observability/object"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/observability/"
+    },
+    "opensearch.query_insights.top_queries": {
+        "methods": ["GET"],
+        "url": {
+            "paths": ["/_insights/top_queries"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/observing-your-data/query-insights/"
+    },
+    "opensearch.ppl.v2": {
+        "methods": ["POST"],
+        "url": {
+            "paths": ["/_plugins/_ppl", "/_plugins/_ppl/_explain", "/_plugins/_query/_search"]
+        },
+        "documentation": "https://opensearch.org/docs/latest/search-plugins/sql/sql-ppl-api/"
+    }
+}
