@@ -30,12 +30,38 @@ Checkout the demo project https://github.com/jasonc08/vscode-elasticdeveloper/tr
 
 ## Description
 ### Environment
-This is an Elasticsearch server and should be created in a file with extension *esenv*, see below for an example. It is possible to have multiple environments in a workspace but these must be separate files.
+An environment points at an Elasticsearch or OpenSearch cluster and should be created in a file with extension *esenv*, see below for an example. It is possible to have multiple environments in a workspace but these must be separate files.
 
 ```json
     {
         "host": "http://localhost:9200",
         "name": "dev"
+    }
+```
+
+`engine` and `version` are optional and only matter for autocomplete, which picks
+its endpoint and query DSL data from them.
+
+| Field | Required | Description |
+|---|---|---|
+| `host` | yes | Cluster URL, including the scheme and port |
+| `name` | yes | Display name used in the explorer and in query output |
+| `engine` | no | `elasticsearch` (default) or `opensearch` |
+| `version` | no | Cluster version, e.g. `7.10.2`, `2.11.0`, `3.2.0` |
+| `useragent` | no | Overrides the default user agent sent with requests |
+
+Elasticsearch is supported up to 7.10; later releases are handled as OpenSearch,
+which is versioned on its own scale. Without `engine` and `version` the extension
+falls back to the built-in Elasticsearch 6.5 data.
+
+An OpenSearch 3.x environment looks like this:
+
+```json
+    {
+        "host": "http://localhost:9200",
+        "name": "os3",
+        "engine": "opensearch",
+        "version": "3.2.0"
     }
 ```
 

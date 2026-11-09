@@ -398,12 +398,6 @@ export class IntellisenseGraphManager {
         let engine = this.getEngine();
         let major = this.getMajorVersion();
         let minor = this.getMinorVersion();
-        let start = engine === constant.EngineOpenSearch ? 1 : 6;
-
-        if(engine !== constant.EngineOpenSearch) {
-            // Last Elasticsearch version this extension knows about.
-            major = Math.min(major, constant.LastElasticsearchMajorVersion);
-        }
 
         let extension = vscode.extensions.getExtension(constant.ExtensionId);
         let files:string[] = [];
@@ -414,27 +408,74 @@ export class IntellisenseGraphManager {
 
         let overlaysFolder = path.join(extension.extensionPath, 'resources', 'overlays');
 
-        let pushIfExists = (version:string) => {
-            let filePath = path.join(overlaysFolder, engine + '-' + version + suffix);
+        if(!fs.existsSync(overlaysFolder)) {
+            return files;
+        }
 
-            if(fs.existsSync(filePath)) {
-                files.push(filePath);
+        let enginePrefix = engine + '-';
+        let knownVersions = fs.readdirSync(overlaysFolder)
+            .filter(f=> f.startsWith(enginePrefix) && f.endsWith(suffix))
+            .map(f=> f.substring(enginePrefix.length, f.length - suffix.length))
+            .filter(v=> /^\d+(\.\d+)*$/.test(v))
+            .sort((a, b)=> this.compareVersions(a, b));
+
+        if(knownVersions.length === 0) {
+            return files;
+        }
+
+        // Without an explicit version on the environment, apply everything that
+        // ships for this engine. Overlays are cumulative, so applying the newest
+        // one only would leave out what the earlier ones added.
+        let latestMajor = parseInt(knownVersions[knownVersions.length - 1].split('.')[0], 10);
+        let targetMajor = (minor === null || minor === undefined) ? latestMajor : major;
+
+        if(engine !== constant.EngineOpenSearch) {
+            // Last Elasticsearch version this extension knows about.
+            targetMajor = Math.min(targetMajor, constant.LastElasticsearchMajorVersion);
+        }
+
+        for(let version of knownVersions) {
+
+            let parts = version.split('.');
+            let versionMajor = parseInt(parts[0], 10);
+
+            if(versionMajor > targetMajor) {
+                continue;
             }
-        };
-
-        for(let version = start; version <= major; version++) {
-
-            pushIfExists(version.toString());
 
             // Minor overlays only make sense for the major version in use.
-            if(version === major && minor !== null && minor !== undefined) {
-                for(let m = 0; m <= minor; m++) {
-                    pushIfExists(version + '.' + m);
+            if(parts.length > 1) {
+
+                if(versionMajor !== targetMajor) {
+                    continue;
+                }
+
+                if(minor !== null && minor !== undefined && parseInt(parts[1], 10) > minor) {
+                    continue;
                 }
             }
+
+            files.push(path.join(overlaysFolder, enginePrefix + version + suffix));
         }
 
         return files;
+    }
+
+    private compareVersions(a:string, b:string):number {
+
+        let left = a.split('.').map(n=> parseInt(n, 10) || 0);
+        let right = b.split('.').map(n=> parseInt(n, 10) || 0);
+        let length = Math.max(left.length, right.length);
+
+        for(let i = 0; i < length; i++) {
+            let diff = (left[i] || 0) - (right[i] || 0);
+
+            if(diff !== 0) {
+                return diff;
+            }
+        }
+
+        return 0;
     }
 
     private getEngine():string {
@@ -1022,8 +1063,23 @@ export class IntellisenseGraphManager {
         let versionNumbers:string[] = [];
         let file:any = null;
 
-        versionNumbers.push(this.getDefaultVersionNumber());
-        versionNumbers.push(this.getVersionNumber());
+        // Use the environment version when it has one; otherwise fall back to
+        // the newest version available on disk.
+        let versionNumber = this.getVersionNumber();
+
+        if(versionNumber) {
+            versionNumbers.push(versionNumber);
+        } else {
+            versionNumbers.push(this.getDefaultVersionNumber());
+
+            // Fallback: try every version folder, newest first.
+            let newest = this.getVersionFolders().sort((a, b)=> this.compareVersions(b, a));
+            for(let v of newest) {
+                versionNumbers.push(v);
+            }
+        }
+
+        versionNumbers = versionNumbers.filter(v=> !!v);
 
         // The endpoint key from rest-api-spec (e.g. `indices.get_mapping`) does not
         // always match the Query DSL file name in `endpoints/` (e.g. `_mappings`),
@@ -1031,10 +1087,6 @@ export class IntellisenseGraphManager {
         let candidates = getDslFileCandidates(endpointId);
 
         for(let versionNumber of versionNumbers) {
-
-            if(!versionNumber) {
-                continue;
-            }
 
             let folderPath = path.join(extension.extensionPath, 'resources', versionNumber, 'endpoints');
 
@@ -1167,12 +1219,12 @@ export class IntellisenseGraphManager {
 
                 let version = Version.parse(constant.DefaultVersion);
                 LogManager.warning(false, 'using default version %s', version);
+            }
 
-                let closestVersion = Version.getClosest(version, folders);
-
-                if(closestVersion) {
-                    versionNumber = closestVersion.toString();
-                }
+            // Last resort: use the newest version that has endpoints when no
+            // version could be determined above.
+            if(!versionNumber) {
+                versionNumber = this.getNewestVersionWithEndpoints(folders);
             }
 
         }
