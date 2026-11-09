@@ -157,6 +157,19 @@ Install and test the archive:
 code --install-extension elasticdeveloper-1.2.14.vsix --force
 ```
 
+> **Do not double-click the `.vsix` file on Windows.** Windows associates `.vsix`
+> with the Visual Studio installer, which only knows about Visual Studio and
+> SSMS. It will fail with:
+>
+> ```
+> VSIXInstaller.NoApplicableSKUsException: One or more extensions are for Visual
+> Studio Code. Try installing them in Visual Studio Code.
+> ```
+>
+> That is expected: the archive is a VS Code extension, not a Visual Studio one.
+> Always install it through `code --install-extension`, or through the
+> Extensions view in VS Code (`...` → **Install from VSIX...**).
+
 Then open a `.esquery` file and try `Ctrl+Space` inside a `_search` body.
 
 ---
