@@ -8,6 +8,12 @@ All notable changes to the "Elasticsearch Developer tool" extension will be docu
     - Color highlight for mustache syntax
     - Color highlight for query-string syntax
 
+## 1.3.1
+### Fixed
+- IntelliSense did not complete against empty arrays or inside nested
+  aggregations; the Elasticsearch 6 and OpenSearch 1 overlays now cover those
+  cases
+
 ## 1.3.0
 ### Added
 - Support for OpenSearch 1, 2 and 3 in the endpoint and query DSL intelliSense
