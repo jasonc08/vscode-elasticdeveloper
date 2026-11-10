@@ -60,6 +60,17 @@
                 "aggs": {
                     "__children_of": "aggregations_template"
                 },
+                "filter": {
+                    "__children_of": "query_dsl"
+                },
+                "filters": {
+                    "other_bucket_key": "",
+                    "filters": {
+                        "{name}": {
+                            "__children_of": "query_dsl"
+                        }
+                    }
+                },
                 "rare_terms": {
                     "field": "{field}",
                     "size": 10,
